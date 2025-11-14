@@ -1,48 +1,64 @@
 """
-Database Schemas
+Database Schemas for Dating App
 
-Define your MongoDB collection schemas here using Pydantic models.
-These schemas are used for data validation in your application.
-
-Each Pydantic model represents a collection in your database.
-Model name is converted to lowercase for the collection name:
-- User -> "user" collection
-- Product -> "product" collection
-- BlogPost -> "blogs" collection
+Each Pydantic model represents a collection in MongoDB.
+Collection name is the lowercase of the class name.
 """
 
-from pydantic import BaseModel, Field
-from typing import Optional
+from pydantic import BaseModel, Field, EmailStr
+from typing import Optional, List, Literal
 
-# Example schemas (replace with your own):
 
-class User(BaseModel):
+class Profile(BaseModel):
     """
-    Users collection schema
-    Collection name: "user" (lowercase of class name)
+    Profiles collection schema
+    Collection name: "profile"
     """
-    name: str = Field(..., description="Full name")
-    email: str = Field(..., description="Email address")
-    address: str = Field(..., description="Address")
-    age: Optional[int] = Field(None, ge=0, le=120, description="Age in years")
-    is_active: bool = Field(True, description="Whether user is active")
+    email: EmailStr = Field(..., description="Unique email for login (OTP-based)")
+    name: str = Field(..., description="Display name")
+    age: Optional[int] = Field(None, ge=18, le=100, description="Age in years")
+    gender: Optional[Literal["male", "female", "non-binary", "other"]] = None
+    bio: Optional[str] = Field(None, description="Short bio")
+    interests: List[str] = Field(default_factory=list, description="List of interests/tags")
+    photos: List[str] = Field(default_factory=list, description="List of photo URLs")
+    location_lat: Optional[float] = Field(None, description="Latitude")
+    location_lng: Optional[float] = Field(None, description="Longitude")
+    is_active: bool = Field(True, description="Whether the profile is active")
 
-class Product(BaseModel):
+
+class Swipe(BaseModel):
     """
-    Products collection schema
-    Collection name: "product" (lowercase of class name)
+    Swipes collection schema
+    Collection name: "swipe"
     """
-    title: str = Field(..., description="Product title")
-    description: Optional[str] = Field(None, description="Product description")
-    price: float = Field(..., ge=0, description="Price in dollars")
-    category: str = Field(..., description="Product category")
-    in_stock: bool = Field(True, description="Whether product is in stock")
+    user_id: str = Field(..., description="User who swiped")
+    target_id: str = Field(..., description="User who was swiped on")
+    action: Literal["like", "pass"] = Field(..., description="Swipe action")
 
-# Add your own schemas here:
-# --------------------------------------------------
 
-# Note: The Flames database viewer will automatically:
-# 1. Read these schemas from GET /schema endpoint
-# 2. Use them for document validation when creating/editing
-# 3. Handle all database operations (CRUD) directly
-# 4. You don't need to create any database endpoints!
+class Match(BaseModel):
+    """
+    Matches collection schema
+    Collection name: "match"
+    """
+    user_a: str = Field(..., description="One user in the match")
+    user_b: str = Field(..., description="The other user in the match")
+
+
+class Message(BaseModel):
+    """
+    Messages collection schema
+    Collection name: "message"
+    """
+    match_id: str = Field(..., description="Match ID this message belongs to")
+    sender_id: str = Field(..., description="Sender user id")
+    text: str = Field(..., min_length=1, max_length=2000, description="Message text")
+
+
+class OTP(BaseModel):
+    """
+    OTP codes collection schema (for demo). In production, send codes via email/SMS.
+    Collection name: "otp"
+    """
+    email: EmailStr
+    code: str
